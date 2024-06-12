@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Airflow Server CloudFormation template
+
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t4g.small
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+  ImageId:
+    Description: AMI ID for the EC2 instance
+    Type: AWS::EC2::Image::Id
+    Default: ami-0eac975a54dfee8cb
+    ConstraintDescription: Must be a valid AMI ID.
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties: 
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref ImageId
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPair
+      SecurityGroups: 
+        - !Ref InstanceSecurityGroup
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: Enable SSH access
+      SecurityGroupIngress: 
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      Roles: 
+        - !Ref EC2Role
+
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: S3AccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - arn:aws:s3:::neornith-etl
+                  - arn:aws:s3:::neornith-etl/*
+        - PolicyName: LambdaInvokePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: neornith-keypair
+
+Outputs:
+  InstanceId:
+    Description: The instance ID
+    Value: !Ref EC2Instance
+  PublicIP:
+    Description: Public IP address of the EC2 instance
+    Value: !GetAtt 
+      - EC2Instance
+      - PublicIp
+  KeyPair:
+    Description: The Key Pair
+    Value: !Ref KeyPair
