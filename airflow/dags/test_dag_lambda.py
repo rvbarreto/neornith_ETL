@@ -10,7 +10,7 @@ def trigger_lambda_function():
     lambda_client = boto3.client('lambda', region_name='us-east-1')
 
     # Specify the name of your Lambda function
-    function_name = 'wikiaves_city_count'
+    function_name = 'wikiaves-city-count'
 
     # Specify any input payload for your Lambda function
     payload = {
