@@ -25,8 +25,10 @@ def trigger_lambda_function():
         Payload=json.dumps(payload)
     )
 
-    # Print the response from the Lambda function
-    print(response)
+    # Extract the payload from the response
+    json_payload = json.loads(response['Payload'].read().decode('utf-8'))
+
+    return json_payload
 
 # Define the DAG
 dag = DAG(
