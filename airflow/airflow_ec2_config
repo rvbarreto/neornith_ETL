@@ -6,6 +6,7 @@ python3 -m venv venv
 source venv/bin/activate
 sudo apt-get install libpq-dev
 pip install "apache-airflow[postgres]==2.9.2" --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.9.2/constraints-3.12.txt"
+sed -i 's/load_examples = True/load_examples = False/' airflow.cfg 
 airflow db migrate
 sudo apt-get install postgresql postgresql-contrib
 sudo -i -u postgres
@@ -18,15 +19,16 @@ cd airflow
 sed -i 's#sqlite:////home/ubuntu/airflow/airflow.db#postgresql+psycopg2://airflow_user:airflow_pass@localhost/airflow_db#g' airflow.cfg
 sed -i 's#SequentialExecutor#LocalExecutor#g' airflow.cfg
 airflow db migrate
-airflow users create -u neornith -f airflow -l airflow -r Admin -e ricardo.viana.barreto@gmail.com
+airflow users create -u neornith -f airflow -l airflow -r Admin -e airflow@mail.com
 
 sed -i 's#airflow/dags#neornith_ETL/airflow/dags#' airflow.cfg 
 
 cd ..
 git clone https://github.com/rvbarreto/neornith_ETL.git
 
+pip3 install boto3
 -- open port 8080
 airflow webserver &
-airflow scheduler
+airflow scheduler &
 
 
