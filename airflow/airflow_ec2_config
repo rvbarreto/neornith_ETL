@@ -20,6 +20,13 @@ sed -i 's#SequentialExecutor#LocalExecutor#g' airflow.cfg
 airflow db migrate
 airflow users create -u neornith -f airflow -l airflow -r Admin -e ricardo.viana.barreto@gmail.com
 
+sed -i 's#airflow/dags#neornith_ETL/airflow/dags#' airflow.cfg 
+
+cd ..
+git clone https://github.com/rvbarreto/neornith_ETL.git
+
 -- open port 8080
 airflow webserver &
 airflow scheduler
+
+
