@@ -4,7 +4,7 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from functions.lambdas import trigger_lambda_function
 
-function_name = 'db-query-from-s3'
+function_name = 'db-query-from-S3'
 payload = {
     'sql_file_name': 'city_count.sql',
     'city': '1100015'
