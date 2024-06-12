@@ -168,5 +168,12 @@ airflow/airflow.db
 airflow/logs/
 airflow/webserver_config.py
 airflow/.vscode/
+airflow/airflow_docker/
+airflow/.vscode
 
 .DS_Store
+
+# non-desired files
+lambdas/lambda_layer/
+*.zip
+secrets/
