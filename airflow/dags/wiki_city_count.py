@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -29,3 +28,4 @@ trigger_lambda = PythonOperator(
 
 # Set the task dependencies
 trigger_lambda
+#test
