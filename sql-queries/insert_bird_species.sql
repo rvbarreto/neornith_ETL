@@ -1,0 +1,1 @@
+INSERT INTO Bird_Species (binomial_name, pt_br) VALUES ({sp_cientifico}, {sp_popular}) ON CONFLICT DO NOTHING;
