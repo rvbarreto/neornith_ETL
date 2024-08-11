@@ -10,3 +10,12 @@ def trigger_lambda_function(function_name, payload, region_name='us-east-1'):
     )
     json_payload = json.loads(response['Payload'].read().decode('utf-8'))
     return json_payload
+
+def execute_sql_file(payload):
+    function_name = 'db-query-from-S3'
+    payload = payload
+    try:
+        response = trigger_lambda_function(function_name, payload)
+    except:
+        print("Error executing SQL file with payload: ", payload)
+    return response

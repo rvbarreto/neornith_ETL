@@ -1,0 +1,1 @@
+UPDATE Locals_BR SET db_wikiaves = {db_wikiaves}, last_update = CURRENT_DATE WHERE local_id = {local_id};

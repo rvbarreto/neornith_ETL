@@ -1,0 +1,1 @@
+SELECT local_id FROM Locals_BR ORDER BY last_update ASC, local_id ASC;

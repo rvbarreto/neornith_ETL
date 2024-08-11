@@ -9,8 +9,10 @@ CREATE TABLE Locals_BR (
        state_name VARCHAR(32) NOT NULL,
        state_acronym VARCHAR(2) NOT NULL,
        db_count INTEGER NOT NULL,
-       db_wikiaves INTEGER NOT NULL
+       db_wikiaves INTEGER NOT NULL,
+       last_update DATE NOT NULL DEFAULT CURRENT_DATE,
 );
+ALTER TABLE Locals_BR ADD last_update DATE NOT NULL DEFAULT CURRENT_DATE; 
 CREATE TABLE Wikiaves_Photos (
        reg_id INTEGER PRIMARY KEY,
        binomial_name VARCHAR(64) NOT NULL,

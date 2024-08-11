@@ -1,0 +1,1 @@
+SELECT local_id, db_wikiaves - db_count AS delta FROM Locals_BR WHERE db_count < db_wikiaves ORDER BY last_update ASC;
