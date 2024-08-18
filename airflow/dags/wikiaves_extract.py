@@ -19,25 +19,34 @@ def n_pages(total_reg, page_size=20):
 @task()
 def update_raw(city_ids):
     function_name = 'wikiaves-get-registers'
+    city_total = len(city_ids)
+    i = 0
     for city_id, delta in city_ids:
         total = 0
-        #for page in range(int(n_pages(delta) * 1.5)):
-        page = 1 #
-        while True: #
+        for page in range(int(n_pages(delta * 2))):
             payload = {
             'city_code': city_id,
             'type': 'f',
             'page': page
             }
-            response = trigger_lambda_function(function_name, payload)
-            response_len = len(response['registros']['itens'])
+            while True:
+                try:
+                    response = trigger_lambda_function(function_name, payload)
+                    response_len = len(response['registros']['itens'])
+                    break
+                except:
+                    time.sleep(randint(5, 20)/10)
+                    print(f"Error getting wikiaves city {city_id} page {page}. Retrying...")
+                    continue
+
             if response_len == 0:
-                break 
-            page += 1 #
+                break
             total += response_len
             time.sleep(randint(1, 5)/10)
             print(f"Page {page} of city {city_id} processed.")
         print(f"{total}/{delta} registers inserted in raw layer for city {city_id}.")
+        i += 1
+        print(f"Saved... {i}/{city_total} cities processed.")
 
 
 @dag('wikiaves_extract', start_date=datetime(2021, 12, 1), schedule="0 0 * * 1", catchup=False)

@@ -33,16 +33,19 @@ def get_city_list():
 
 @task()
 def update_counts(city_ids):
+    i = 0
+    total = len(city_ids)
     for city_id in city_ids:
         wa_count = wiki_city_count(city_id[0])
-        print(f"{city_id[0]}: {wa_count} new registers.")
+        print(f"{city_id[0]}: {wa_count} registers.")
         payload = {
             'sql_file_name': 'update_wa_city_count.sql',
             'local_id': city_id[0],
             'db_wikiaves': wa_count
         }
         execute_sql_file(payload)
-        print(f"Saved")
+        i += 1
+        print(f"Saved... {i}/{total} cities processed.")
         time.sleep(randint(1, 5)/10)
 
 @dag('wikiaves_update_counts',

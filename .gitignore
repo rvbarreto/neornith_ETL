@@ -177,3 +177,5 @@ airflow/.vscode
 lambdas/lambda_layers/
 *.zip
 secrets/
+
+.vscode
