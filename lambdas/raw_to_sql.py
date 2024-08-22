@@ -6,25 +6,21 @@ logger = logging.getLogger()
 logger.setLevel("ERROR")
 logger.info("raw to sql started")
 
-
 def extract_data(item):
-    d = dict()
-    d['reg_id'] = item['id']
-    d['reg_type'] = item['tipo']
-    d['sp_id'] = item['sp']['id']
-    d['sp_cientifico'] = item['sp']['nome']
-    d['sp_popular'] = item['sp']['nvt']
-    d['sp_wiki'] = item['sp']['idwiki']
-    d['reg_autor'] = item['autor']
-    d['autor_perfil'] = item['perfil']
-    d['reg_data'] = item['data']
-    d['reg_questionado'] = item['is_questionada']
-    d['reg_local'] = item['local']
-    d['local_id'] = item['idMunicipio']
-    d['reg_coms'] = item['coms']
-    d['reg_likes'] = item['likes']
-    d['reg_vis'] = item['vis']
-    return(d)
+    l = list()
+    l.append(item['id'])
+    l.append(item['sp']['nome'])
+    l.append(item['sp']['id'])
+    l.append(item['sp']['idwiki'])
+    l.append(item['autor'])
+    l.append(item['perfil'])
+    l.append(item['data'])
+    l.append(item['is_questionada'])
+    l.append(item['idMunicipio'])
+    l.append(item['coms'])
+    l.append(item['likes'])
+    l.append(item['vis'])
+    return(tuple(l))
 
 def normalize_data(data):
     normalized_data = [extract_data(record) for key, record in data.items()]
@@ -47,28 +43,20 @@ def lambda_handler(event, context):
     
     logger.info("raw data loaded")
     
-    # Normalize the data using your custom function
+    # Normalize the data
     normalized_data = normalize_data(data['registros']['itens'])
     json_data = json.dumps(normalized_data)
     
-
     # Create a lambda client
     lambda_client = boto3.client('lambda')
 
     logger.info(f'Updating city {normalized_data[0]['local_id']}...')
+    fields = "reg_id, binomial_name, sp_id, sp_wiki, autor, autor_perfil, reg_date, questionado, local_id, coms, likes, vis"
     # Call db query lambda function and pass the normalized data to it
     response = lambda_client.invoke(
-        FunctionName='db-query-from-S3',
+        FunctionName='db-bulk-insert-to-sql',
         InvocationType='RequestResponse',
-        Payload=f'{{"bulk": {json_data}, "sql_file_name": "insert_bird_photos.sql"}}'
-    )
-    logger.info('Done!')
-    logger.info('Updating table count')
-    # Update city count in the database
-    lambda_client.invoke(
-        FunctionName='db-query-from-S3',
-        InvocationType='Event',
-        Payload=f'{{"sql_file_name": "update_db_city_count.sql", "local_id": {normalized_data[0]['local_id']}}}'
+        Payload=f'{{"bulk": {json_data}, "table": "Wikiaves_Photos", "fields": "{fields}"}}'
     )
     logger.info('Done!')
     

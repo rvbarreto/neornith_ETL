@@ -20,15 +20,12 @@ def n_pages(total_reg, page_size=20):
 def update_raw(city_ids):
     function_name = 'wikiaves-get-registers'
     city_total = len(city_ids)
-    i = 0
-    for city_id, delta in city_ids:
+    city_count = 0
+    for city_id, db_count in city_ids:
         total = 0
-        for page in range(int(n_pages(delta * 2))):
-            payload = {
-            'city_code': city_id,
-            'type': 'f',
-            'page': page
-            }
+        page = n_pages(db_count) - 1 # -1 to avoid missing registers
+        while True:
+            payload = {'city_code': city_id, 'type': 'f', 'page': page}
             while True:
                 try:
                     response = trigger_lambda_function(function_name, payload)
@@ -41,17 +38,24 @@ def update_raw(city_ids):
 
             if response_len == 0:
                 break
+            page += 1
             total += response_len
             time.sleep(randint(1, 5)/10)
             print(f"Page {page} of city {city_id} processed.")
-        print(f"{total}/{delta} registers inserted in raw layer for city {city_id}.")
-        i += 1
-        print(f"Saved... {i}/{city_total} cities processed.")
+        print(f"{total} registers inserted in raw layer for city {city_id}.")
+        city_count += 1
+        print(f"Saved... {city_count}/{city_total} cities processed.")
+
+@task(trigger_rule='all_done')
+def update_city_count():
+    payload = {'sql_file_name': 'update_db_city_count.sql'}
+    response = execute_sql_file(payload)
 
 
 @dag('wikiaves_extract', start_date=datetime(2021, 12, 1), schedule="0 0 * * 1", catchup=False)
 def wikiaves_extract():
     city_ids = get_city_list()
-    update_raw(city_ids)
+    update_raw(city_ids) >> update_city_count()
+
 
 dag = wikiaves_extract()

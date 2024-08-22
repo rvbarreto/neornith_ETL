@@ -19,7 +19,7 @@ CREATE TABLE Wikiaves_Photos (
        sp_id INTEGER NULL,
        sp_wiki VARCHAR(64) NOT NULL,
        autor VARCHAR(64) NOT NULL,
-       autor_perfil VARCHAR(16) NOT NULL,
+       autor_perfil VARCHAR(128) NOT NULL,
        reg_date DATE NOT NULL,
        questionado BOOLEAN NOT NULL,
        local_id INTEGER NOT NULL,
