@@ -38,10 +38,10 @@ def update_raw(city_ids):
 
             if response_len == 0:
                 break
-            page += 1
             total += response_len
             time.sleep(randint(1, 5)/10)
             print(f"Page {page} of city {city_id} processed.")
+            page += 1
         print(f"{total} registers inserted in raw layer for city {city_id}.")
         city_count += 1
         print(f"Saved... {city_count}/{city_total} cities processed.")
