@@ -23,7 +23,7 @@ def update_raw(city_ids):
     city_count = 0
     for city_id, db_count in city_ids:
         total = 0
-        page = n_pages(db_count) - 1 # -1 to avoid missing registers
+        page = max(n_pages(db_count) - 1, 1) # -1 to avoid missing registers
         while True:
             payload = {'city_code': city_id, 'type': 'f', 'page': page}
             while True:
