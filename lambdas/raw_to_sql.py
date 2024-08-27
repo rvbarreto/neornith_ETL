@@ -1,38 +1,38 @@
 import json
 import boto3
 
-import logging
-logger = logging.getLogger()
-logger.setLevel("ERROR")
-logger.info("raw to sql started")
-
+# Create a lambda client
+lambda_client = boto3.client('lambda')
 
 def extract_data(item):
-    d = dict()
-    d['reg_id'] = item['id']
-    d['reg_type'] = item['tipo']
-    d['sp_id'] = item['sp']['id']
-    d['sp_cientifico'] = item['sp']['nome']
-    d['sp_popular'] = item['sp']['nvt']
-    d['sp_wiki'] = item['sp']['idwiki']
-    d['reg_autor'] = item['autor']
-    d['autor_perfil'] = item['perfil']
-    d['reg_data'] = item['data']
-    d['reg_questionado'] = item['is_questionada']
-    d['reg_local'] = item['local']
-    d['local_id'] = item['idMunicipio']
-    d['reg_coms'] = item['coms']
-    d['reg_likes'] = item['likes']
-    d['reg_vis'] = item['vis']
-    return(d)
+    l = list()
+    l.append(item['id'])
+    l.append(item['sp']['nome'])
+    l.append(item['sp']['id'])
+    l.append(item['sp']['idwiki'])
+    l.append(item['autor'])
+    l.append(item['perfil'])
+    l.append(item['data'])
+    l.append(item['is_questionada'])
+    l.append(item['idMunicipio'])
+    l.append(item['coms'])
+    l.append(item['likes'])
+    l.append(item['vis'])
+    return(tuple(l))
 
 def normalize_data(data):
     normalized_data = [extract_data(record) for key, record in data.items()]
     return normalized_data
+    
+def bulk_insert(table, fields, bulk_data):
+    response = lambda_client.invoke(
+        FunctionName='db-bulk-insert-to-sql',
+        InvocationType='RequestResponse',
+        Payload=f'{{"bulk": {bulk_data}, "table": "{table}", "fields": "{fields}"}}'
+    )
+    return response
 
 def lambda_handler(event, context):
-    logger.info(event)
-    
     # Get the S3 bucket and key from the event
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = event['Records'][0]['s3']['object']['key']
@@ -45,35 +45,24 @@ def lambda_handler(event, context):
     # Parse the JSON data
     data = json.loads(json_data)
     
-    logger.info("raw data loaded")
-    
-    # Normalize the data using your custom function
+    # Normalize the data
     normalized_data = normalize_data(data['registros']['itens'])
     json_data = json.dumps(normalized_data)
     
-
-    # Create a lambda client
-    lambda_client = boto3.client('lambda')
-
-    logger.info(f'Updating city {normalized_data[0]['local_id']}...')
-    # Call db query lambda function and pass the normalized data to it
-    response = lambda_client.invoke(
-        FunctionName='db-query-from-S3',
-        InvocationType='RequestResponse',
-        Payload=f'{{"bulk": {json_data}, "sql_file_name": "insert_bird_photos.sql"}}'
-    )
-    logger.info('Done!')
-    logger.info('Updating table count')
-    # Update city count in the database
-    lambda_client.invoke(
-        FunctionName='db-query-from-S3',
-        InvocationType='Event',
-        Payload=f'{{"sql_file_name": "update_db_city_count.sql", "local_id": {normalized_data[0]['local_id']}}}'
-    )
-    logger.info('Done!')
+    # Add species
+    species_data = json.dumps([(r[1], r[3]) for r in normalized_data])
+    fields = "binomial_name, pt_br"
+    response_species = bulk_insert("Bird_Species", fields, species_data)
+    
+    # Add photos
+    fields = "reg_id, binomial_name, sp_id, sp_wiki, autor, autor_perfil, reg_date, questionado, local_id, coms, likes, vis"
+    response_photos = bulk_insert("Wikiaves_Photos", fields, json_data)
     
     return {
         'statusCode': 200,
         'body': 'Data normalized and saved to RDS PostgreSQL',
-        'response': json.loads(response["Payload"].read()),
+        'response': {
+            'new_species': json.loads(response_species["Payload"].read()),
+            'new_photos': json.loads(response_photos["Payload"].read())
+        }
     }

@@ -4,10 +4,10 @@ import json
 
 def reg_url(c, tm, p=1):
     # {
-    # o: {'dp':'mais recente'},
+    # o: {'dp e desc=1':'mais recente', 'dp e desc=0': mais antiga,},
     # tm: {'f':'foto', 's':'som'}
     # }
-    params = "tm={tm}&t=c&c={c}&p={p}&o=dp".format(tm=tm, c=c, p=p)
+    params = "tm={tm}&t=c&c={c}&p={p}&o=dp&desc=0".format(tm=tm, c=c, p=p)
     return "https://www.wikiaves.com.br/getRegistrosJSON.php?" + params
 
 def validateJSON(jsonData):
