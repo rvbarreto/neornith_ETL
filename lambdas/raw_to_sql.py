@@ -1,10 +1,8 @@
 import json
 import boto3
 
-import logging
-logger = logging.getLogger()
-logger.setLevel("ERROR")
-logger.info("raw to sql started")
+# Create a lambda client
+lambda_client = boto3.client('lambda')
 
 def extract_data(item):
     l = list()
@@ -25,10 +23,16 @@ def extract_data(item):
 def normalize_data(data):
     normalized_data = [extract_data(record) for key, record in data.items()]
     return normalized_data
+    
+def bulk_insert(table, fields, bulk_data):
+    response = lambda_client.invoke(
+        FunctionName='db-bulk-insert-to-sql',
+        InvocationType='RequestResponse',
+        Payload=f'{{"bulk": {bulk_data}, "table": "{table}", "fields": "{fields}"}}'
+    )
+    return response
 
 def lambda_handler(event, context):
-    logger.info(event)
-    
     # Get the S3 bucket and key from the event
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = event['Records'][0]['s3']['object']['key']
@@ -41,27 +45,24 @@ def lambda_handler(event, context):
     # Parse the JSON data
     data = json.loads(json_data)
     
-    logger.info("raw data loaded")
-    
     # Normalize the data
     normalized_data = normalize_data(data['registros']['itens'])
     json_data = json.dumps(normalized_data)
     
-    # Create a lambda client
-    lambda_client = boto3.client('lambda')
-
-    logger.info(f'Updating city {normalized_data[0]['local_id']}...')
+    # Add species
+    species_data = json.dumps([(r[1], r[3]) for r in normalized_data])
+    fields = "binomial_name, pt_br"
+    response_species = bulk_insert("Bird_Species", fields, species_data)
+    
+    # Add photos
     fields = "reg_id, binomial_name, sp_id, sp_wiki, autor, autor_perfil, reg_date, questionado, local_id, coms, likes, vis"
-    # Call db query lambda function and pass the normalized data to it
-    response = lambda_client.invoke(
-        FunctionName='db-bulk-insert-to-sql',
-        InvocationType='RequestResponse',
-        Payload=f'{{"bulk": {json_data}, "table": "Wikiaves_Photos", "fields": "{fields}"}}'
-    )
-    logger.info('Done!')
+    response_photos = bulk_insert("Wikiaves_Photos", fields, json_data)
     
     return {
         'statusCode': 200,
         'body': 'Data normalized and saved to RDS PostgreSQL',
-        'response': json.loads(response["Payload"].read()),
+        'response': {
+            'new_species': json.loads(response_species["Payload"].read()),
+            'new_photos': json.loads(response_photos["Payload"].read())
+        }
     }

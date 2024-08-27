@@ -27,18 +27,18 @@ def lambda_handler(event, context):
     table = event['table']
     bulk = event['bulk']
     fields = event['fields']
+    template = event['template'] if 'template' in event else None
 
-    insert_query = "INSERT INTO " + table + " (" + fields + ") VALUES %s RETURNING 1 ON CONFLICT DO NOTHING;"
+    insert_query = "SET datestyle = dmy; INSERT INTO " + table + " (" + fields + ") VALUES %s ON CONFLICT DO NOTHING RETURNING 1;"
     response = execute_values(cursor,
                               insert_query,
                               bulk,
+                              template=template,
                               page_size=300,
                               fetch=True)
-
-
 
     # Close the database connection
     cursor.close()
     conn.close()
     
-    return sum(response)
+    return sum([r[0] for r in response])
